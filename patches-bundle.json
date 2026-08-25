@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-08-25T18:11:34Z",
+  "created_at": "2026-08-25T18:17:36Z",
   "description": "Hardened Amazon Shopping and Amazon India patches: vendored runtime UI payloads, parsed-origin validation, explicit price-history activation, and one WebSettings autoplay implementation.",
-  "download_url": "https://github.com/urroxyz/morphe-patches/releases/download/v1.21.0-amazon.1/patches-1.21.0-amazon.1.mpp",
+  "download_url": "https://github.com/urroxyz/morphe-patches/releases/download/v1.21.1/patches-1.21.1.mpp",
   "signature_download_url": "",
-  "version": "1.21.0-amazon.1"
+  "version": "1.21.1"
 }
