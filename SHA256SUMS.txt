@@ -1,1 +1,1 @@
-461b53752d7589a0184381ceda8cf3b25b22603394c95148e9248e4d1451589f  patches/build/libs/patches-1.21.0-dev.1.mpp
+ea9caf5ab9323093f359889c754212de9fab6d5eeca61bd1a8fd78e065ca1edf  patches/build/libs/patches-1.21.0-amazon.1.mpp

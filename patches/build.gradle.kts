@@ -4,10 +4,10 @@ patches {
     about {
         name = "Doom's Morphe Patches"
         description = "New mask, same task. All patches answer to Doom."
-        source = "https://github.com/rushiranpise/morphe-patches"
-        author = "rushiranpise"
-        contact = "https://github.com/rushiranpise"
-        website = "https://morphe.software/add-source?github=rushiranpise/morphe-patches"
+        source = "https://github.com/urroxyz/morphe-patches/tree/release/amazon-hardened-v1.21.0-amazon.1"
+        author = "urroxyz"
+        contact = "https://github.com/urroxyz"
+        website = "https://morphe.software/add-source?github=urroxyz/morphe-patches/tree/release/amazon-hardened-v1.21.0-amazon.1"
         license = "GPLv3"
     }
 }

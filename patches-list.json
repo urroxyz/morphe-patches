@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.21.0-dev.1",
+  "version": "1.21.0-amazon.1",
   "patches": [
     {
       "name": "AMOLED dark theme",
@@ -1470,59 +1470,6 @@
     {
       "name": "Disable video autoplay",
       "description": "Prevents videos from autoplaying in Amazon's in-app WebView pages.",
-      "default": true,
-      "dependencies": [],
-      "compatiblePackages": [
-        {
-          "packageName": "com.amazon.mShop.android.shopping",
-          "name": "Amazon Shopping",
-          "description": null,
-          "apkFileType": "XAPK",
-          "appIconColor": "#FF9900",
-          "signatures": null,
-          "targets": [
-            {
-              "version": "32.13.2.100",
-              "versionCodes": {
-                "ARM64_V8A": 1241320216,
-                "ARMEABI_V7A": 1241320216,
-                "X86_64": 1241320216,
-                "X86": 1241320216
-              },
-              "isExperimental": false,
-              "minSdk": null,
-              "description": null
-            }
-          ]
-        },
-        {
-          "packageName": "in.amazon.mShop.android.shopping",
-          "name": "Amazon India",
-          "description": null,
-          "apkFileType": "XAPK",
-          "appIconColor": "#FF9900",
-          "signatures": null,
-          "targets": [
-            {
-              "version": "32.15.0.300",
-              "versionCodes": {
-                "ARM64_V8A": 1243210306,
-                "ARMEABI_V7A": 1243210306,
-                "X86_64": 1243210306,
-                "X86": 1243210306
-              },
-              "isExperimental": false,
-              "minSdk": null,
-              "description": null
-            }
-          ]
-        }
-      ],
-      "options": []
-    },
-    {
-      "name": "Disable video autoplay",
-      "description": "Prevents product and ad videos from autoplaying.",
       "default": true,
       "dependencies": [],
       "compatiblePackages": [
@@ -5710,8 +5657,13 @@
           "signatures": null,
           "targets": [
             {
-              "version": "1.0.2",
-              "versionCodes": null,
+              "version": "v1.0.7",
+              "versionCodes": {
+                "ARM64_V8A": 7,
+                "ARMEABI_V7A": 7,
+                "X86_64": 7,
+                "X86": 7
+              },
               "isExperimental": false,
               "minSdk": null,
               "description": null
