@@ -1,1 +1,1 @@
-ea9caf5ab9323093f359889c754212de9fab6d5eeca61bd1a8fd78e065ca1edf  patches/build/libs/patches-1.21.0-amazon.1.mpp
+811e0be693ac07aa008825888174298b1a727732d5f2e7bff73afee325b92d7f  patches/build/libs/patches-1.21.1.mpp
