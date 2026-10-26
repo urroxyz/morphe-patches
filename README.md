@@ -11,8 +11,8 @@ Please open a pull request whenever. I'll accept it.
 <a href="#amazon-incl-india"><img src="https://cdn-1.webcatalog.io/catalog/amazon-fr/amazon-fr-icon.png" width="52" height="52" alt="Amazon icon"></a>
 <br>
 <strong>
-  <a href="#amazon-incl-india">Amazon Shopping</a>
-  <br>&amp; <a href="#amazon-incl-india">Amazon India</a></strong>
+  <a href="#amazon-incl-india">Amazon</a>
+  <br><a href="#amazon-incl-india">Shopping</a> / <a href="#amazon-incl-india">India</a></strong>
 <br>
 <sub>
 <a href="#dark-mode-simple--safe">Dark mode</a>
@@ -47,7 +47,7 @@ Please open a pull request whenever. I'll accept it.
 <br>
 <sub>
 <a href="#physical-activity-spoof-receiver">ClipCascade sync</a>
-<br><a href="#physical-activity-spoof-receiver">Simplified translate UX</a>
+<br><a href="#physical-activity-spoof-receiver">Better translate UX</a>
 </sub>
 </td>
 <td width="176" align="center" valign="top">
