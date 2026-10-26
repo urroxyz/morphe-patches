@@ -2,7 +2,7 @@
   <img align="right" src="open_in_morphe.svg" height="50" alt="Open in Morphe">
 </a>
 
-# Urro's Morphe patches
+# Morphe patches
 A curated third-party patch source compatible with [Morphe](https://morphe.software/).
 This repository is independent of the official Morphe project.
 
