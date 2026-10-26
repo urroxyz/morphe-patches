@@ -29,6 +29,46 @@ public String getMainInstruction(){throw new AssertionError("read reminder inste
 public static class Leg {final Path p;Leg(Path p){this.p=p;}public Kind getItemType(){return Kind.TransitLeg;}public List<Segment> getSegments(){return List.of(new Segment(p));}}
 public static class Segment {final Path p;Segment(Path p){this.p=p;}public Header getHeaderSection(){return new Header(p);}}
 public static class Header {final Path p;Header(Path p){this.p=p;}public Path getPathType(){return p;}}}''',
+'android/os/SystemClock.java':'package android.os; public class SystemClock {public static long now;public static long elapsedRealtime(){return now;}}',
+'djinni/java/src/GOLiveActivityPlatformData.java':'''package djinni.java.src;public class GOLiveActivityPlatformData {
+final Activity a;public GOLiveActivityPlatformData(boolean badge,String main){a=new Activity(new Instruction(badge,main));}
+public Activity getAndroidWidget(){return a;}public Activity getMinimized(){return a;}
+public static class Activity {final Instruction i;Activity(Instruction i){this.i=i;}public Instruction getInstruction(){return i;}}
+public static class Instruction {final boolean b;final Text t;Instruction(boolean b,String m){this.b=b;t=new Text(m);}public Object getFloatingServiceName(){return b?this:null;}public Text getMainInstruction(){return t;}}
+public static class Text {final String v;Text(String v){this.v=v;}public String getValue(){return v;}}}''',
+'xyz/urro/transit/BackgroundTest.java':'''package xyz.urro.transit;
+import android.os.*;import android.content.*;import com.thetransitapp.droid.shared.service.GoService;import djinni.java.src.*;import xyz.urro.activityspoof.Transmitter;
+/** Observed on device: in the background GoService keeps publishing GO live models while its TripDetails stays frozen. */
+public class BackgroundTest {
+static int checks;static void eq(int a,int b){checks++;if(a!=b)throw new AssertionError("expected "+a+" got "+b);}
+static Context c=new Context();
+static void live(long t,boolean badge,String main){SystemClock.now=t;GoActivityTransmitter.onLive(c,new GOLiveActivityPlatformData(badge,main));Handler.flush();}
+static void model(TripDetails t){GoService.e.e.value=t;GoActivityTransmitter.onModel(t);Handler.flush();}
+public static void main(String[] a){
+ GoService.e=new GoService.VM();GoActivityTransmitter.serviceCommand(new Intent("start-go"));Handler.flush();
+ model(new TripDetails(true,TripDetails.Path.Start));eq(0,Transmitter.enters);
+ // Screen off from here: TripDetails stays the same stale object.
+ live(1000,false,"Go in <b>7</b> min");eq(0,Transmitter.enters);
+ live(2000,true,"in 4 min");eq(0,Transmitter.enters); // waiting at the stop has the same structure as riding
+ live(3000,true,"Get off in <b>25</b> stops");eq(1,Transmitter.enters); // native boarding, while the stale model says Start
+ live(4000,true,"Get off in 24 stops");eq(1,Transmitter.enters);eq(0,Transmitter.exits); // stale model can't undo it
+ live(5000,true,"Detour in effect");eq(0,Transmitter.exits); // detour text on the transit leg never ends a ride
+ live(6000,true,"Your stop is next!");eq(1,Transmitter.enters);
+ live(7000,false,"Walk 4 min");eq(0,Transmitter.exits); // one update isn't settled
+ live(7500,false,"Walk 4 min");eq(0,Transmitter.exits); // nor a burst
+ live(13000,false,"Walk 3 min");eq(1,Transmitter.exits); // native alighting, background
+ // Foreground: a fresh model is authoritative and the same live level can't flap it back.
+ live(20000,true,"Get off in 3 stops");eq(2,Transmitter.enters);
+ model(new TripDetails(true,TripDetails.Path.Start));eq(2,Transmitter.exits);
+ live(21000,true,"Get off in 2 stops");eq(2,Transmitter.enters);
+ model(new TripDetails(true,TripDetails.Path.Riding));eq(3,Transmitter.enters);
+ // GO ended: late live callbacks can't resurrect the vehicle; a new session starts clean.
+ GoActivityTransmitter.serviceDestroyed(new GoService());Handler.flush();eq(3,Transmitter.exits);
+ live(30000,true,"Get off in 2 stops");eq(3,Transmitter.enters);
+ GoActivityTransmitter.serviceCommand(new Intent("start-go"));Handler.flush();GoService.e=new GoService.VM();GoService.e.e.value=new TripDetails(true,TripDetails.Path.Start);
+ live(31000,true,"Get off in 9 stops");eq(4,Transmitter.enters);
+ System.out.println("PASS background transmitter: "+checks+" assertions (frozen trip model, waiting vs riding, detour, settled alighting, fresh model authority, GO end)");
+}}''',
 'xyz/urro/transit/OnboardTest.java':'''package xyz.urro.transit;
 import android.os.Handler;import android.content.*;import com.thetransitapp.droid.shared.service.GoService;import djinni.java.src.TripDetails;import xyz.urro.activityspoof.Transmitter;
 public class OnboardTest {
@@ -74,5 +114,7 @@ with tempfile.TemporaryDirectory() as d:
         p.write_text(text)
     real = root/'extensions/extension/src/main/java/xyz/urro/transit'
     subprocess.run(['javac', '-d', str(d/'classes'), *map(str, d.rglob('*.java')),
-                    str(real/'GoActivityTransmitter.java'), str(real/'GoVehicleState.java')], check=True)
+                    str(real/'GoActivityTransmitter.java'), str(real/'GoVehicleState.java'),
+                    str(real/'GoLiveRide.java'), str(real/'GoInstruction.java')], check=True)
     subprocess.run(['java', '-cp', str(d/'classes'), 'xyz.urro.transit.OnboardTest'], check=True)
+    subprocess.run(['java', '-cp', str(d/'classes'), 'xyz.urro.transit.BackgroundTest'], check=True)
