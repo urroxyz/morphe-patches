@@ -7,7 +7,7 @@ Please open a pull request whenever. I'll accept it.
 ## ToC
 <table>
 <tr>
-<td width="240" align="center" valign="top">
+<td width="176" align="center" valign="top">
 <a href="#amazon-incl-india"><img src="https://cdn-1.webcatalog.io/catalog/amazon-fr/amazon-fr-icon.png" width="52" height="52" alt="Amazon icon"></a>
 <br>
 <strong>
@@ -18,7 +18,7 @@ Please open a pull request whenever. I'll accept it.
 <a href="#dark-mode-simple--safe">Dark mode</a>
 </sub>
 </td>
-<td width="200" align="center" valign="top">
+<td width="176" align="center" valign="top">
 <a href="#transit-pvta"><img src="https://img.netzwelt.de/picture/original/2023/11/transit-icon-388754.png" width="52" height="52" alt="Transit icon"></a>
 <br>
 <strong>
@@ -31,7 +31,7 @@ Please open a pull request whenever. I'll accept it.
 <br><a href="#physical-activity-spoof-transmitter">Activity spoof</a>
 </sub>
 </td>
-<td width="200" align="center" valign="top">
+<td width="176" align="center" valign="top">
 <a href="#niagara-launcher"><img src="https://d33v4339jhl8k0.cloudfront.net/docs/assets/5e884e2004286364bc97d1f8/images/63d37f7a0c84eb3266332a8a/file-TmFAHMbAEK.png" width="52" height="52" alt="Niagara Launcher icon"></a>
 <br>
 <strong><a href="#niagara-launcher">Niagara Launcher</a></strong>
@@ -40,7 +40,17 @@ Please open a pull request whenever. I'll accept it.
 <a href="#custom-weather-sources">Weather sources</a>
 </sub>
 </td>
-<td width="240" align="center" valign="top">
+<td width="176" align="center" valign="top">
+<a href="#universal"><img src="https://www.apkmirror.com/wp-content/themes/APKMirror/ap_resize/ap_resize.php?src=https%3A%2F%2Fdownloadr2.apkmirror.com%2Fwp-content%2Fuploads%2F2018%2F07%2F5b563e71c5fa9.png" width="52" height="52" alt="Universal globe icon"></a>
+<br>
+<strong><a href="#universal">Gboard</a></strong>
+<br>
+<sub>
+<a href="#physical-activity-spoof-receiver">ClipCascade sync</a>
+<br><a href="#physical-activity-spoof-receiver">Simplified translate UX</a>
+</sub>
+</td>
+<td width="176" align="center" valign="top">
 <a href="#universal"><img src="https://cdn-icons-png.flaticon.com/512/17486/17486444.png" width="52" height="52" alt="Universal globe icon"></a>
 <br>
 <strong><a href="#universal">UNIVERSAL</a></strong>
