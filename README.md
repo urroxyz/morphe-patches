@@ -1,10 +1,12 @@
-<a href="https://morphe.software/add-source?github=urroxyz/morphe-patches">
-  <img align="right" src="open_in_morphe.svg" height="50" alt="Open in Morphe">
-</a>
-
-# Morphe patches
+# Urro's Morphe patches
 A curated third-party patch source compatible with [Morphe](https://morphe.software/).
-This repository is independent of the official Morphe project.
+<br>This repository is independent of the official Morphe project.
+
+<p align="center">
+  <a href="https://morphe.software/add-source?github=urroxyz/morphe-patches">
+    <img src="open_in_morphe.svg" height="50" alt="Open in Morphe">
+  </a>
+</p>
 
 Please open a pull request whenever. I'll accept it.
 
