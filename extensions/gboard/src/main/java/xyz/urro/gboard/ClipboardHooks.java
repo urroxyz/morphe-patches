@@ -252,23 +252,38 @@ public final class ClipboardHooks {
             if (delete == null || !(delete.getParent() instanceof LinearLayout)) return;
             LinearLayout menu = (LinearLayout) delete.getParent();
             if (menu.getTag(SEND_TAG) != null) return;
-            menu.setTag(SEND_TAG, true);
+            int deleteIndex = menu.indexOfChild(delete);
+            if (deleteIndex < 1 || !(menu.getChildAt(deleteIndex - 1) instanceof LinearLayout)) return;
+            LinearLayout middle = (LinearLayout) menu.getChildAt(deleteIndex - 1);
+            TextView nativeText = findText(middle);
+            ImageView nativeIcon = findImage(middle);
+            if (nativeText == null || nativeIcon == null) return;
             LinearLayout row = new LinearLayout(menu.getContext());
-            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setLayoutParams(new LinearLayout.LayoutParams(delete.getLayoutParams()));
-            row.setMinimumHeight((int) (48 * root.getResources().getDisplayMetrics().density));
-            row.setPadding(delete.getPaddingLeft(), delete.getPaddingTop(), delete.getPaddingRight(), delete.getPaddingBottom());
-            if (delete.getBackground() != null && delete.getBackground().getConstantState() != null) row.setBackground(delete.getBackground().getConstantState().newDrawable().mutate());
-            TextView nativeText = findText((ViewGroup) delete);
+            row.setGravity(middle.getGravity());
+            row.setOrientation(middle.getOrientation());
+            row.setLayoutDirection(middle.getLayoutDirection());
+            row.setLayoutParams(new LinearLayout.LayoutParams((LinearLayout.LayoutParams) middle.getLayoutParams()));
+            row.setPaddingRelative(middle.getPaddingStart(), middle.getPaddingTop(), middle.getPaddingEnd(), middle.getPaddingBottom());
+            if (middle.getBackground() != null && middle.getBackground().getConstantState() != null)
+                row.setBackground(middle.getBackground().getConstantState().newDrawable(root.getResources()).mutate());
+            if (middle.getForeground() != null && middle.getForeground().getConstantState() != null)
+                row.setForeground(middle.getForeground().getConstantState().newDrawable(root.getResources()).mutate());
             ImageView icon = new ImageView(menu.getContext());
             icon.setImageResource(android.R.drawable.ic_menu_send);
-            int size = (int) (24 * root.getResources().getDisplayMetrics().density);
-            if (nativeText != null) icon.setImageTintList(nativeText.getTextColors());
-            row.addView(icon, new LinearLayout.LayoutParams(size, size));
+            icon.setImageTintList(nativeIcon.getImageTintList() != null ? nativeIcon.getImageTintList() : nativeText.getTextColors());
+            icon.setScaleType(nativeIcon.getScaleType());
+            icon.setPaddingRelative(nativeIcon.getPaddingStart(), nativeIcon.getPaddingTop(), nativeIcon.getPaddingEnd(), nativeIcon.getPaddingBottom());
+            icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(icon, new LinearLayout.LayoutParams((LinearLayout.LayoutParams) nativeIcon.getLayoutParams()));
             TextView label = new TextView(menu.getContext()); label.setText("Send");
-            if (nativeText != null) { label.setTextColor(nativeText.getTextColors()); label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, nativeText.getTextSize()); label.setTypeface(nativeText.getTypeface()); }
-            label.setPadding(size / 2, 0, 0, 0); row.addView(label);
+            label.setTextColor(nativeText.getTextColors());
+            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, nativeText.getTextSize());
+            label.setTypeface(nativeText.getTypeface());
+            label.setGravity(nativeText.getGravity());
+            label.setLetterSpacing(nativeText.getLetterSpacing());
+            label.setIncludeFontPadding(nativeText.getIncludeFontPadding());
+            label.setPaddingRelative(nativeText.getPaddingStart(), nativeText.getPaddingTop(), nativeText.getPaddingEnd(), nativeText.getPaddingBottom());
+            row.addView(label, new LinearLayout.LayoutParams((LinearLayout.LayoutParams) nativeText.getLayoutParams()));
             row.setOnClickListener(view -> {
                 try {
                     String text = (String) call(item, "i", new Class<?>[0]);
@@ -277,7 +292,8 @@ public final class ClipboardHooks {
                     else send(view, text, "text");
                 } catch (ReflectiveOperationException exception) { log(exception); }
             });
-            menu.addView(row, menu.indexOfChild(delete));
+            menu.addView(row, deleteIndex);
+            menu.setTag(SEND_TAG, true);
         } catch (ReflectiveOperationException | RuntimeException | java.io.IOException exception) { log(exception); }
     }
 
@@ -320,6 +336,15 @@ public final class ClipboardHooks {
             View child = parent.getChildAt(i);
             if (child instanceof TextView) return (TextView) child;
             if (child instanceof ViewGroup) { TextView found = findText((ViewGroup) child); if (found != null) return found; }
+        }
+        return null;
+    }
+
+    private static ImageView findImage(ViewGroup parent) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof ImageView) return (ImageView) child;
+            if (child instanceof ViewGroup) { ImageView found = findImage((ViewGroup) child); if (found != null) return found; }
         }
         return null;
     }
