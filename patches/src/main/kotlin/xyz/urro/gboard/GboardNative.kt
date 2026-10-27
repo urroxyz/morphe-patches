@@ -58,4 +58,3 @@ internal fun BytecodePatchContext.nativeString(name: String, value: String) {
 internal fun Method.fields() = (implementation?.instructions ?: emptyList()).mapNotNull {
     (it as? ReferenceInstruction)?.reference as? FieldReference
 }.toList()
-
