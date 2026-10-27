@@ -9,7 +9,7 @@ def git(*args):
 
 version = next(s.split('=', 1)[1].strip() for s in (root/'gradle.properties').read_text().splitlines() if s.startswith('version'))
 expected = {'Dark mode', 'Bike mode', 'Personal Maps API key', 'Custom weather sources',
-            'Physical Activity spoof [TRANSMITTER]', 'Physical Activity spoof [RECEIVER]', 'ClipCascade clipboard', 'Translation language shortcuts'}
+            'Physical Activity spoof [TRANSMITTER]', 'Physical Activity spoof [RECEIVER]', 'ClipCascade sync', 'Better translate UX'}
 catalog = json.loads((root/'patches-list.json').read_text())
 assert catalog['version'] == version
 assert len(catalog['patches']) == len(expected) and {p['name'] for p in catalog['patches']} == expected

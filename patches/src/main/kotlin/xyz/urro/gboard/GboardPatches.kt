@@ -91,7 +91,7 @@ private val editor = Fingerprint(definingClass = KEYBOARD, name = "D", returnTyp
 
 @Suppress("unused")
 val translationShortcutsPatch = bytecodePatch(
-    name = "Translation language shortcuts",
+    name = "Better translate UX",
     description = "Changes translation languages with ISO/BCP language codes followed by whitespace. Adds an optional compact language-pair editor in Gboard settings.",
     default = false,
 ) {

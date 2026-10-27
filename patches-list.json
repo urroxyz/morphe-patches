@@ -3,6 +3,33 @@
   "version": "0.0.1",
   "patches": [
     {
+      "name": "Better translate UX",
+      "description": "Changes translation languages with ISO/BCP language codes followed by whitespace. Adds an optional compact language-pair editor in Gboard settings.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.google.android.inputmethod.latin",
+          "name": "Gboard",
+          "description": null,
+          "apkFileType": null,
+          "appIconColor": null,
+          "signatures": null,
+          "formFactor": "MOBILE",
+          "targets": [
+            {
+              "version": "18.0.3.954559732-release-arm64-v8a",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Bike mode",
       "description": "Bicycle-specific GO reminders (Get bike in N stops / SOON / NOW) with editable templates. Exact stock Transit 6.3.5 build.",
       "default": false,
@@ -32,7 +59,7 @@
       "options": []
     },
     {
-      "name": "ClipCascade clipboard",
+      "name": "ClipCascade sync",
       "description": "Adds pooled remote clipboard history, images and Send to all devices. Supports ClipCascade P2S/P2P. Configure the required server/account patch options before patching.",
       "default": false,
       "category": null,
@@ -287,33 +314,6 @@
               "versionCodes": {
                 "ARM64_V8A": 5127740
               },
-              "isExperimental": false,
-              "minSdk": null,
-              "description": null
-            }
-          ]
-        }
-      ],
-      "options": []
-    },
-    {
-      "name": "Translation language shortcuts",
-      "description": "Changes translation languages with ISO/BCP language codes followed by whitespace. Adds an optional compact language-pair editor in Gboard settings.",
-      "default": false,
-      "category": null,
-      "compatiblePackages": [
-        {
-          "packageName": "com.google.android.inputmethod.latin",
-          "name": "Gboard",
-          "description": null,
-          "apkFileType": null,
-          "appIconColor": null,
-          "signatures": null,
-          "formFactor": "MOBILE",
-          "targets": [
-            {
-              "version": "18.0.3.954559732-release-arm64-v8a",
-              "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
               "description": null

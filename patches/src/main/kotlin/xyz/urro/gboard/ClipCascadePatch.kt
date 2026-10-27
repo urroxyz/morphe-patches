@@ -101,7 +101,7 @@ private val clipBytecode = bytecodePatch {
 
 @Suppress("unused")
 val clipCascadePatch = resourcePatch(
-    name = "ClipCascade clipboard",
+    name = "ClipCascade sync",
     description = "Adds pooled remote clipboard history, images and Send to all devices. Supports ClipCascade P2S/P2P. Configure the required server/account patch options before patching.",
     default = false,
 ) {

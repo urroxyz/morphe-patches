@@ -6,7 +6,7 @@ r=Path(__file__).resolve().parents[1]
 version=next(line.split('=',1)[1].strip() for line in (r/'gradle.properties').read_text().splitlines() if line.strip().startswith('version'))
 artifact=r/f'patches/build/libs/patches-{version}.mpp'
 catalog=json.loads((r/'patches-list.json').read_text())
-expected={'Dark mode','Bike mode','Physical Activity spoof [TRANSMITTER]','Physical Activity spoof [RECEIVER]','Personal Maps API key','Custom weather sources','ClipCascade clipboard','Translation language shortcuts'}
+expected={'Dark mode','Bike mode','Physical Activity spoof [TRANSMITTER]','Physical Activity spoof [RECEIVER]','Personal Maps API key','Custom weather sources','ClipCascade sync','Better translate UX'}
 assert catalog['version']==version
 assert len(catalog['patches'])==8 and {p['name'] for p in catalog['patches']}==expected
 with zipfile.ZipFile(artifact) as z:

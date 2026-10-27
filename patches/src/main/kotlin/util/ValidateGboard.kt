@@ -14,10 +14,10 @@ fun main(args: Array<String>) = runBlocking {
     check(!root.exists()) { "Refusing to overwrite existing output" }
     root.mkdirs()
     val patches = loadPatchesFromJar(setOf(File(args[0])))
-    val desired = setOf("ClipCascade clipboard", "Translation language shortcuts")
+    val desired = setOf("ClipCascade sync", "Better translate UX")
     val selected = patches.filter { it.name in desired }.toMutableSet()
     check(selected.size == desired.size)
-    val clip = selected.single { it.name == "ClipCascade clipboard" }
+    val clip = selected.single { it.name == "ClipCascade sync" }
     // Disposable local fixture values, supplied by the caller and never used for a real account.
     clip.options["clipCascadeServer"] = System.getenv("GBOARD_TEST_SERVER") ?: error("Missing test server")
     clip.options["clipCascadeUsername"] = System.getenv("GBOARD_TEST_USER") ?: error("Missing test user")
