@@ -3,7 +3,7 @@ group = "xyz.urro.patches"
 patches {
     about {
         name = "Urro"
-        description = "Amazon dark mode, Transit GO enhancements, configurable Niagara weather and universal activity recognition overrides."
+        description = "Amazon dark mode, Transit GO enhancements, configurable Niagara weather, universal activity recognition overrides and Gboard clipboard/translation tools."
         source = "https://github.com/urroxyz/morphe-patches"
         author = "urroxyz"
         contact = "https://github.com/urroxyz"
@@ -68,4 +68,16 @@ tasks.register<JavaExec>("validateTransit") {
  classpath = sourceSets["main"].runtimeClasspath
  mainClass.set("util.ValidateTransitKt")
  args(providers.gradleProperty("transitApk").getOrElse("missing.apk"), providers.gradleProperty("validationOut").getOrElse("build/private-validation"))
+}
+
+tasks.register<JavaExec>("validateGboard") {
+    dependsOn("build")
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("util.ValidateGboardKt")
+    args(
+        layout.buildDirectory.file("libs/patches-${project.version}.mpp").get().asFile.absolutePath,
+        providers.gradleProperty("gboardApk").getOrElse("missing.apk"),
+        providers.gradleProperty("validationOut").getOrElse("build/private-validation"),
+    )
+    providers.gradleProperty("communityBundle").orNull?.let { args(it) }
 }

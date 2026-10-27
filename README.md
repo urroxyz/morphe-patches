@@ -206,3 +206,59 @@ python3 tools/release_metadata.py
 The catalog generator reads the exact versioned bundle. `buildAndroid` must run last so the published bundle includes Android DEX. Optional fixture validators `:patches:validateComfortFix` and `:patches:validateTransit` accept private local APK paths; their outputs must never be committed or published. Run `buildAndroid` again afterward before releasing.
 
 Source follows the standard `patches/` and `extensions/extension/` Morphe template layout. Tests live in `tests/`. See [NOTICE](NOTICE) and [LICENSE](LICENSE) for upstream attribution and license restrictions.
+
+### Gboard
+
+[ClipCascade sync](#clipcascade-clipboard-sync) · [Better translate UX](#translation-language-shortcuts)
+
+#### ClipCascade clipboard sync
+*TL;DR - keep your other devices' clipboard contents in Gboard.*
+
+<details>
+<summary>info</summary>
+
+This adds ClipCascade to Gboard's own clipboard panel. Local clips go under `This device`, and incoming clips go under `Other devices`. You can rename both sections in Gboard Settings → Clipboard → ClipCascade.
+
+Stock ClipCascade clients don't reliably say which device sent something, so remote clips are pooled together. This doesn't require changes to your other clients. Both server-relayed (P2S) and peer-to-peer (P2P) transports are included.
+
+Text and supported images can appear in the clipboard history. Unsupported image formats fall back to Downloads. What another device does with an image still depends on its ClipCascade client; this patch can't change that client's keyboard.
+
+Long-press a clip and choose `Send` to broadcast it to your connected clients. The confirmation is on by default, and you can turn it off in Clipboard settings. There's no recipient picker, and copying something locally doesn't automatically broadcast it.
+
+When patching, fill in the server URL, username and password in Morphe Manager. Encryption, salt and key-derivation settings need to match your other clients. Credentials are embedded in your patched APK, so don't share that APK. The public patch bundle doesn't contain your credentials.
+
+On Android 17 and newer, use `Allow local network access` in the ClipCascade section to grant the native permission for nearby P2P connections. Internet access alone isn't enough for that.
+
+You can hide the remote section without disconnecting, or turn the connection off altogether. Section names and the other in-app options survive normal restarts and same-package, same-signer updates.
+
+Tested support:
+- ARM64 18.0.3.954559732-release-arm64-v8a
+- Source patching alongside community Clipboard Enhancements, Clipboard Custom Character Limit, Settings Homepage Override and Package Rename
+- Pixel clipboard panel and settings controls
+- Encrypted P2P text and PNG receipt on the Pixel through a remote ClipCascade server
+
+Protocol and encryption checks cover text, images, P2S and P2P. A complete stock desktop-client interoperability test hasn't been established yet; treat this integration as experimental.
+
+</details>
+
+#### Translation language shortcuts
+*TL;DR - change translation languages by typing their codes.*
+
+<details>
+<summary>info</summary>
+
+In Gboard's Translate input, type a language code followed by a space. `es ` changes the target to Spanish; `en-es ` sets English → Spanish. The shortcut disappears so you can start typing what you want translated.
+
+ISO aliases and regional codes work too, including `eng-spa`, `enUS-ptBR` and `en-US-pt-BR`, when the corresponding languages are available in Gboard. Whitespace isn't restricted to an ordinary ASCII space. Parsing is restricted to the beginning of the input.
+
+Gboard Settings → Translate → Translation shortcuts has one toggle: `Simplify input field`. It replaces the language buttons with a small code field beside the translation input. The current pair is prefilled and selected. Auto → English is shown as `en`, rather than `auto-en`.
+
+The two inputs share a style, with rounded outer corners and square inner corners. The code field accepts letters, numbers and hyphens. Space confirms the code and moves input to the translation field. Only the active field should show the cursor and focus outline. Simplified mode also removes the extra back-arrow row.
+
+This is optional. Leave the toggle off to keep Gboard's usual language controls and use the shortcuts in its ordinary translation input.
+
+Tested support:
+- ARM64 18.0.3.954559732-release-arm64-v8a
+- Pixel field switching, selected-code Backspace, language confirmation and repeated reopening
+
+</details>

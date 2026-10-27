@@ -9,7 +9,7 @@ def git(*args):
 
 version = next(s.split('=', 1)[1].strip() for s in (root/'gradle.properties').read_text().splitlines() if s.startswith('version'))
 expected = {'Dark mode', 'Bike mode', 'Personal Maps API key', 'Custom weather sources',
-            'Physical Activity spoof [TRANSMITTER]', 'Physical Activity spoof [RECEIVER]'}
+            'Physical Activity spoof [TRANSMITTER]', 'Physical Activity spoof [RECEIVER]', 'ClipCascade clipboard', 'Translation language shortcuts'}
 catalog = json.loads((root/'patches-list.json').read_text())
 assert catalog['version'] == version
 assert len(catalog['patches']) == len(expected) and {p['name'] for p in catalog['patches']} == expected
@@ -51,7 +51,7 @@ with zipfile.ZipFile(bundle) as archive:
     manifest = archive.read('META-INF/MANIFEST.MF').decode().replace('\r\n', '\n')
     assert '\nName: Urro\n' in manifest
     assert '\nSource: https://github.com/urroxyz/morphe-patches\n' in manifest
-    for name in ('classes.dex', 'extensions/extension.mpe', 'extensions/activity-spoof.mpe'):
+    for name in ('classes.dex', 'extensions/extension.mpe', 'extensions/activity-spoof.mpe', 'extensions/gboard.mpe'):
         assert archive.read(name).startswith(b'dex\n'), f'Missing Android DEX: {name}'
     assert b'Lxyz/urro/transit/GoInputSpoof;' not in archive.read('extensions/extension.mpe'), 'GO developer utility leaked into release'
     assert b'GoInputSpoof' not in archive.read('classes.dex'), 'GO injection hooks leaked into patch bundle'
@@ -59,4 +59,4 @@ with zipfile.ZipFile(bundle) as archive:
 import hashlib
 assert (root/'SHA256SUMS.txt').read_text() == hashlib.sha256(bundle.read_bytes()).hexdigest()+'  '+bundle.name+'\n'
 git('diff', '--check')
-print(f'PASS: six patches, universal receiver, both Manager endpoints, three DEX payloads, checksum; {scanned} source/archive entries scanned')
+print(f'PASS: eight patches, universal receiver, both Manager endpoints, four DEX payloads, checksum; {scanned} source/archive entries scanned')

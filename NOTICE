@@ -26,3 +26,10 @@ Build and catalog infrastructure derives from MorpheApp/morphe-patches-template.
 Amazon dark-mode patch derives from rushiranpise/morphe-patches; its dark-mode JavaScript/CSS integration credits hxreborn/amznkiller (GPL-3.0).
 Transit GO and Niagara weather customizations are maintained by urroxyz.
 This curated source is not an official Morphe release.
+
+Gboard ClipCascade transport integration follows Sathvik-Rao/ClipCascade's
+P2S/STOMP and P2P/WebRTC protocol at revision
+fed738e79605b4045430f6993d4c2208904c66cc (GPL-3.0).
+Upstream: https://github.com/Sathvik-Rao/ClipCascade
+The transport source retains its attribution. The SHA-3 implementation
+follows the public FIPS 202 algorithm.
