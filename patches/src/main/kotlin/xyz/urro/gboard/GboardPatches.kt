@@ -14,7 +14,10 @@ import org.w3c.dom.Element
 internal const val ANDROID = "http://schemas.android.com/apk/res/android"
 internal val gboardCompatibility = Compatibility(
     name = "Gboard", packageName = "com.google.android.inputmethod.latin",
-    targets = listOf(AppTarget(version = "18.0.3.954559732-release-arm64-v8a")),
+    // Do not require republishing for every version number; native contracts are
+    // checked against the actual input before any APK can be produced.
+    description = "Structurally checked native API. Tested on ARM64 18.0.3 and 18.5.4.",
+    targets = listOf(AppTarget(version = null)),
 )
 
 internal fun Element.android(name: String, value: String) = setAttributeNS(ANDROID, "android:$name", value)
@@ -51,7 +54,11 @@ internal val gboardSettingsHook = bytecodePatch {
     compatibleWith(gboardCompatibility)
     extendWith("extensions/gboard.mpe")
     execute {
-        val method = Fingerprint(definingClass = "Landroidx/preference/Preference;", name = "I", returnType = "V", parameters = emptyList()).method
+        val api = GboardNative(this)
+        val preference = api.type("Landroidx/preference/Preference;")
+        fun resolved(role: String, predicate: (com.android.tools.smali.dexlib2.iface.Method) -> Boolean) =
+            mutableClassDefBy(preference.type).methods.single { it.toString() == preference.method(role, predicate).toString() }
+        val method = resolved("preference click") { it.signature("V") && it.calls().any { c -> c.name == "startActivity" && c.definingClass == "Landroid/content/Context;" } }
         check(method.implementation!!.registerCount >= 2) { "No local register in Gboard preference handler" }
         method.addInstructions(0, """
             invoke-static/range {p0 .. p0}, Lxyz/urro/gboard/SettingsRoutes;->open(Ljava/lang/Object;)Z
@@ -61,11 +68,19 @@ internal val gboardSettingsHook = bytecodePatch {
             :urro_existing_preference
             nop
         """)
-        val read = Fingerprint(definingClass = "Landroidx/preference/Preference;", name = "aa", returnType = "Z", parameters = listOf("Z")).method
+        val read = resolved("boolean preference read") { it.signature("Z", "Z") && it.calls().any { c -> c.name == "getBoolean" && c.definingClass == "Landroid/content/SharedPreferences;" } }
+        val key = read.fields().filter { it.definingClass == preference.type && it.type == "Ljava/lang/String;" }.distinctBy { it.name }.unique("preference storage key")
+        val context = preference.fields.filter { it.type == "Landroid/content/Context;" }.unique("preference context")
+        val summary = preference.fields.filter { it.type == "Ljava/lang/CharSequence;" && it.accessFlags and 2 != 0 }.unique("preference summary")
+        val summarySetter = preference.method("preference summary setter") { it.signature("V", "Ljava/lang/CharSequence;") && it.fields().any { f -> f.name == summary.name && f.definingClass == preference.type } }
+        nativeString("preferenceKey", key.name)
+        nativeString("preferenceContext", context.name)
+        nativeString("preferenceSummary", summary.name)
+        nativeString("preferenceSummarySetter", summarySetter.name)
         read.addInstructions(0, "invoke-static/range {p0 .. p1}, Lxyz/urro/gboard/SettingsRoutes;->read(Ljava/lang/Object;Z)Z\nmove-result p1")
-        val write = Fingerprint(definingClass = "Landroidx/preference/Preference;", name = "ad", returnType = "Z", parameters = listOf("Z")).method
+        val write = resolved("boolean preference write") { it.signature("Z", "Z") && it.calls().any { c -> c.name == "putBoolean" && c.definingClass == "Landroid/content/SharedPreferences\$Editor;" } }
         write.addInstructions(0, "invoke-static/range {p0 .. p1}, Lxyz/urro/gboard/SettingsRoutes;->write(Ljava/lang/Object;Z)V")
-        val bind = Fingerprint(definingClass = "Landroidx/preference/Preference;", name = "a", returnType = "V", parameters = listOf("Lcdz;")).method
+        val bind = resolved("preference view binding") { it.returnType == "V" && it.parameterTypes.size == 1 && it.calls().any { c -> c.name == "setText" && c.definingClass == "Landroid/widget/TextView;" } }
         bind.addInstructions(0, "invoke-static/range {p0 .. p0}, Lxyz/urro/gboard/SettingsRoutes;->bind(Ljava/lang/Object;)V")
     }
 }
@@ -85,9 +100,6 @@ internal val translationResources = resourcePatch {
 
 private const val KEYBOARD = "Lcom/google/android/apps/inputmethod/libs/translate/TranslateKeyboard;"
 private const val HOOK = "Lxyz/urro/gboard/TranslationHooks;"
-private val attach = Fingerprint(definingClass = KEYBOARD, name = "k", returnType = "V", parameters = emptyList())
-private val render = Fingerprint(definingClass = KEYBOARD, name = "l", returnType = "V", parameters = emptyList())
-private val editor = Fingerprint(definingClass = KEYBOARD, name = "D", returnType = "Loqa;", parameters = listOf("Landroid/view/inputmethod/EditorInfo;"))
 
 @Suppress("unused")
 val translationShortcutsPatch = bytecodePatch(
@@ -99,14 +111,40 @@ val translationShortcutsPatch = bytecodePatch(
     dependsOn(translationResources, gboardSettingsHook)
     extendWith("extensions/gboard.mpe")
     execute {
-        // Reflection in the extension is version-bound; verify the native API before modifying it.
-        for ((type, methods) in mapOf(
-            "Lkas;" to listOf("b"), "Lkap;" to listOf("d", "f", "h"),
-            "Lkbd;" to listOf("ag", "ai"), "Lgve;" to emptyList(),
-        )) {
-            val target = classDefBy(type)
-            check(methods.all { name -> target.methods.any { it.name == name } }) { "Unsupported Gboard translation API: $type" }
+        val api = GboardNative(this)
+        val keyboard = api.type(KEYBOARD)
+        val uiType = keyboard.fields.single { it.name == "b" &&
+            api.type(it.type).fields.any { f -> f.type == "Lcom/google/android/apps/inputmethod/libs/translate/TranslateLanguageBar;" } }.type
+        val ui = api.type(uiType)
+        api.requireFields(keyboard, "a" to "Lcom/google/android/libraries/inputmethod/widgets/EditTextOnKeyboard;",
+            "b" to uiType, "c" to "Ljava/util/function/Consumer;", "d" to "Landroid/view/View\$OnTouchListener;")
+        api.requireFields(ui, "d" to "Landroid/view/View;", "e" to "Landroid/view/View;",
+            "f" to "Lcom/google/android/apps/inputmethod/libs/translate/TranslateLanguageBar;",
+            "k" to "Landroid/widget/EditText;", "l" to "Landroid/view/View;")
+        val languages = api.logged("com/google/android/apps/inputmethod/libs/translate/TranslateLanguage")
+        val controller = api.logged("com/google/android/apps/inputmethod/libs/translate/TranslateUiExtension")
+        check(controller.fields.any { it.name == "q" && it.type == languages.type }) { "Unsupported translation language state" }
+        api.requireFields(api.type(controller.superclass!!), "a" to "Ljava/lang/String;")
+        for (field in languages.fields.filter { it.name in setOf("b", "c") }) {
+            val base = api.type(api.type(field.type).superclass!!)
+            check(base.methods.any { it.name == "d" && it.signature("Ljava/lang/String;") } &&
+                base.methods.any { it.name == "f" && it.signature("Ljava/util/Map;") } &&
+                base.methods.any { it.name == "h" && it.signature("Z", "Ljava/lang/String;") }) {
+                "Unsupported native translation language selectors"
+            }
         }
+        for (name in listOf("ag", "ai")) check(controller.methods.any { it.name == name }) { "Unsupported translation controller: $name" }
+        val embedded = api.type("Lcom/google/android/libraries/inputmethod/widgets/EditTextOnKeyboard;")
+        api.requireFields(embedded, "h" to "Ljava/util/function/Consumer;")
+        val focusMethod = embedded.method("editor focus styling") {
+            it.signature("V", "Z") && it.calls().any { c -> c.name == "refreshDrawableState" }
+        }
+        nativeString("editorFocus", focusMethod.name)
+        val editorMethod = keyboard.method("translation input connection") {
+            it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/inputmethod/EditorInfo;") && it.returnType.startsWith("L")
+        }
+        val editor = Fingerprint(definingClass = KEYBOARD, name = editorMethod.name, returnType = editorMethod.returnType,
+            parameters = listOf("Landroid/view/inputmethod/EditorInfo;"))
         // Stock methods reuse parameter registers. A wrapper preserves the receiver and
         // runs our callback only after Gboard has finished binding or updating its UI.
         fun afterNative(method: app.morphe.patcher.util.proxy.mutableTypes.MutableMethod, callback: String) {
@@ -131,9 +169,15 @@ val translationShortcutsPatch = bytecodePatch(
             owner.methods.add(native)
             owner.methods.add(wrapper)
         }
-        afterNative(attach.method, "attach")
-        afterNative(render.method, "render")
-        afterNative(Fingerprint(definingClass = "Lkan;", name = "c", returnType = "V", parameters = emptyList()).method, "renderUi")
+        val attach = keyboard.method("translation query watcher") { "attachQueryWatcher" in it.strings() }
+        afterNative(mutableClassDefBy(KEYBOARD).methods.single { it.toString() == attach.toString() }, "attach")
+        val render = keyboard.method("translation UI refresh") {
+            it.signature("V") && it.calls().size == 1 && it.calls().single().definingClass == ui.type &&
+                it.fields().any { f -> f.type == ui.type } && (it.implementation?.instructions?.count() ?: 0) <= 4
+        }
+        afterNative(mutableClassDefBy(KEYBOARD).methods.single { it.toString() == render.toString() }, "render")
+        val uiRender = ui.method("translation focus UI") { it.signature("V") && it.calls().any { c -> c.name == "setActivated" } }
+        afterNative(mutableClassDefBy(ui.type).methods.single { it.toString() == uiRender.toString() }, "renderUi")
         // Embedded Gboard editors pretend to be focused whenever enabled. Restrict
         // that behavior to the selected editor only when our compact UI is attached.
         val embeddedEditor = "Lcom/google/android/libraries/inputmethod/widgets/EditTextOnKeyboard;"
@@ -167,7 +211,7 @@ val translationShortcutsPatch = bytecodePatch(
             method.addInstructions(index, """
                 invoke-static/range {v$register .. v$register}, $HOOK->editor(Ljava/lang/Object;)Ljava/lang/Object;
                 move-result-object v$register
-                check-cast v$register, Loqa;
+                check-cast v$register, ${editorMethod.returnType}
             """)
         }
     }

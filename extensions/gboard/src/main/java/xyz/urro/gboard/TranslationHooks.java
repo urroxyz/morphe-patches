@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/** Adapter for the inspected 18.0.3 translation UI. No translated labels are used as identifiers. */
+/** Adapter for the structurally checked native translation UI. No translated labels are used as identifiers. */
 public final class TranslationHooks {
     private static final int STATE_TAG = 0x7e750001;
 
@@ -235,8 +235,8 @@ public final class TranslationHooks {
             query.setActivated(!codesActive);
             pair.setCursorVisible(codesActive);
             query.setCursorVisible(!codesActive);
-            call(pair, "g", new Class<?>[]{boolean.class}, codesActive);
-            call(query, "g", new Class<?>[]{boolean.class}, !codesActive);
+            call(pair, NativeApi.editorFocus(), new Class<?>[]{boolean.class}, codesActive);
+            call(query, NativeApi.editorFocus(), new Class<?>[]{boolean.class}, !codesActive);
             ((View) field(field(keyboard, "b"), "l")).setActivated(!codesActive);
         }
 
@@ -349,8 +349,8 @@ public final class TranslationHooks {
                 }
                 // In the supported layout the back wrapper shares the now-empty
                 // language row. Removing both lets its wrap-content height collapse.
-                View back = root.findViewById(0x7f0b0612);
-                if (back == null) back = root.findViewById(0x7f0b0611);
+                int backId = root.getResources().getIdentifier("key_pos_translate_back_wrapper", "id", query.getResources().getResourcePackageName(query.getId()));
+                View back = backId == 0 ? null : root.findViewById(backId);
                 if (back != null) back.setVisibility(View.GONE);
             }
         }

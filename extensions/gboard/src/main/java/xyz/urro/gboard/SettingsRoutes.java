@@ -9,8 +9,8 @@ import android.util.Log;
 /** Native preference controls backed by our stable preference file, scoped to the keys we add. */
 public final class SettingsRoutes {
     private SettingsRoutes() {}
-    private static String key(Object preference) throws ReflectiveOperationException { return (String) TranslationHooks.field(preference, "r"); }
-    private static Context context(Object preference) throws ReflectiveOperationException { return (Context) TranslationHooks.field(preference, "j"); }
+    private static String key(Object preference) throws ReflectiveOperationException { return (String) TranslationHooks.field(preference, NativeApi.preferenceKey()); }
+    private static Context context(Object preference) throws ReflectiveOperationException { return (Context) TranslationHooks.field(preference, NativeApi.preferenceContext()); }
     private static String booleanKey(String key) {
         if ("urro_clipcascade_enabled".equals(key)) return "clipcascade_enabled";
         if ("urro_show_remote_clipboard".equals(key)) return "show_remote_clipboard";
@@ -50,12 +50,12 @@ public final class SettingsRoutes {
             Class<?> type = preference.getClass();
             while (type != null && !type.getName().equals("androidx.preference.Preference")) type = type.getSuperclass();
             if (type == null) throw new NoSuchFieldException("Preference summary");
-            java.lang.reflect.Field field = type.getDeclaredField("a");
+            java.lang.reflect.Field field = type.getDeclaredField(NativeApi.preferenceSummary());
             field.setAccessible(true); field.set(preference, summary);
         } catch (ReflectiveOperationException exception) { log(exception); }
     }
     private static void changed(Object preference) {
-        try { TranslationHooks.call(preference, "n", new Class<?>[]{CharSequence.class}, summary(preference)); }
+        try { TranslationHooks.call(preference, NativeApi.preferenceSummarySetter(), new Class<?>[]{CharSequence.class}, summary(preference)); }
         catch (ReflectiveOperationException exception) { log(exception); }
     }
     public static boolean open(Object preference) {

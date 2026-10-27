@@ -25,6 +25,7 @@ import java.util.WeakHashMap;
 public final class ClipboardHooks {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final Map<Object, List<ClipStore.Entry>> adapters = new WeakHashMap<>();
+    private static final Map<Object, java.lang.ref.WeakReference<Object>> holderAdapters = new WeakHashMap<>();
     private static Context context;
     private static ClipStore store;
     private static ClipCascadeClient client;
@@ -69,6 +70,37 @@ public final class ClipboardHooks {
         return value;
     }
 
+    private static ClipboardRows rows(Object adapter) throws ReflectiveOperationException {
+        List<?> items = (List<?>) field(adapter, "n");
+        boolean visible = context != null && preferences(context).getBoolean("show_remote_clipboard", true);
+        int[] types = new int[items.size()];
+        if (visible) for (int i = 0; i < types.length; i++) types[i] = ((Number) call(items.get(i), "g", new Class<?>[0])).intValue();
+        return new ClipboardRows(types, visible ? snapshot(adapter).size() : 0, visible);
+    }
+
+    public static int nativePosition(Object adapter, int display) {
+        try { return rows(adapter).nativePosition(display); }
+        catch (ReflectiveOperationException exception) { log(exception); return display; }
+    }
+
+    /** Native clipboard callbacks use list indices; RecyclerView still uses display indices. */
+    public static int nativeHolderPosition(Object holder) {
+        try {
+            int display = ((Number) call(holder, NativeApi.holderPosition(), new Class<?>[0])).intValue();
+            java.lang.ref.WeakReference<Object> reference = holderAdapters.get(holder);
+            Object adapter = reference == null ? null : reference.get();
+            return adapter == null ? display : nativePosition(adapter, display);
+        } catch (ReflectiveOperationException exception) { log(exception); return -1; }
+    }
+
+    /** A full refresh keeps native notifications correct when our inserted section shifts. */
+    public static boolean refreshNative(Object adapter) {
+        if (context == null || !adapters.containsKey(adapter)
+                || !preferences(context).getBoolean("show_remote_clipboard", true)) return false;
+        try { call(adapter, NativeApi.refresh(), new Class<?>[0]); return true; }
+        catch (ReflectiveOperationException exception) { log(exception); return false; }
+    }
+
     /** Used by the patched getter, which keeps its stock registers. */
     public static int countOf(Object adapter) {
         try {
@@ -84,33 +116,37 @@ public final class ClipboardHooks {
             init((Context) field(adapter, "e"));
             if (oldTtl != ttl || oldMaximum != maximum) adapters.remove(adapter);
             if (!preferences(context).getBoolean("show_remote_clipboard", true)) return count;
-            int size = snapshot(adapter).size();
-            return count + size + 1;
+            return rows(adapter).count();
         } catch (ReflectiveOperationException | RuntimeException exception) { log(exception); return count; }
     }
 
     public static int type(Object adapter, int position) {
-        try { return position == nativeSize(adapter) ? REMOTE_HEADER : position > nativeSize(adapter) ? 0 : -1; }
+        try {
+            ClipboardRows rows = rows(adapter);
+            return rows.remote(position) ? position == rows.insertion ? REMOTE_HEADER : 0 : -1;
+        }
         catch (ReflectiveOperationException exception) { log(exception); return -1; }
     }
 
     public static Object header(Object adapter, ViewGroup parent, int type) {
         if (type != REMOTE_HEADER) return null;
-        try { return call(adapter, "P", new Class<?>[]{ViewGroup.class}, parent); }
+        try { return call(adapter, NativeApi.header(), new Class<?>[]{ViewGroup.class}, parent); }
         catch (ReflectiveOperationException exception) { log(exception); return null; }
     }
 
     public static boolean bind(Object adapter, Object holder, int position) {
         try {
-            int nativeCount = nativeSize(adapter);
-            if (position < nativeCount) return false;
-            if (position == nativeCount) {
+            holderAdapters.put(holder, new java.lang.ref.WeakReference<>(adapter));
+            ClipboardRows rows = rows(adapter);
+            if (!rows.remote(position)) return false;
+            if (position == rows.insertion) {
                 ((TextView) field(holder, "s")).setText(label(true));
                 call(holder, "F", new Class<?>[]{int.class}, View.VISIBLE);
+                ((View) field(holder, "t")).setVisibility(View.GONE);
                 return true;
             }
             List<ClipStore.Entry> entries = snapshot(adapter);
-            int index = position - nativeCount - 1;
+            int index = position - rows.insertion - 1;
             if (index < 0 || index >= entries.size()) return true;
             ClipStore.Entry entry = entries.get(index);
             TextView text = (TextView) field(holder, "t");
@@ -131,8 +167,8 @@ public final class ClipboardHooks {
             root.setOnClickListener(view -> {
                 try {
                     Object item = nativeItem(adapter.getClass().getClassLoader(), entry);
-                    Object keyboard = field(adapter, "v");
-                    call(keyboard, "D", new Class<?>[]{item.getClass(), boolean.class}, item, true);
+                    Object keyboard = field(adapter, NativeApi.adapterKeyboard());
+                    call(keyboard, NativeApi.paste(), new Class<?>[]{item.getClass(), boolean.class}, item, true);
                 } catch (ReflectiveOperationException exception) { log(exception); }
             });
             root.setOnLongClickListener(view -> {
@@ -158,34 +194,52 @@ public final class ClipboardHooks {
             Object recycler = field(adapter, "j");
             if (recycler == null) return;
             Object layout = field(recycler, "l");
-            int[] positions = (int[]) call(layout, "R", new Class<?>[0]);
-            boolean remote = positions.length > 0 && positions[0] >= nativeSize(adapter);
-            Object keyboard = field(adapter, "v");
-            TextView sticky = (TextView) field(keyboard, "f");
-            if (sticky != null && positions.length > 0) {
-                if (remote) sticky.setText(label(true));
-                else if (positions[0] <= ((Number) field(adapter, "o")).intValue()) sticky.setText(label(false));
-            }
-            if (remote) {
-                for (String name : new String[]{"B", "C", "D"}) {
-                    Object header = field(adapter, name);
-                    if (header != null && field(header, "t") instanceof View) ((View) field(header, "t")).setVisibility(View.GONE);
+            String positionsMethod = NativeApi.visiblePositions();
+            int[] positions = (int[]) (positionsMethod.endsWith("[]")
+                    ? call(layout, positionsMethod.substring(0, positionsMethod.length() - 2), new Class<?>[]{int[].class}, (Object) null)
+                    : call(layout, positionsMethod, new Class<?>[0]));
+            if (positions.length == 0 || positions[0] < 0) return;
+            ClipboardRows rows = rows(adapter);
+            boolean remote = rows.remote(positions[0]);
+            int section = 0;
+            if (!remote) {
+                List<?> items = (List<?>) field(adapter, "n");
+                for (int i = Math.min(rows.nativePosition(positions[0]), items.size() - 1); i >= 0; i--) {
+                    section = ((Number) call(items.get(i), "g", new Class<?>[0])).intValue();
+                    if (section != 0) break;
                 }
             }
+            Object selected = section >= 1 && section <= 3 ? field(adapter, section == 1 ? "B" : section == 2 ? "C" : "D") : null;
+            Object keyboard = field(adapter, NativeApi.adapterKeyboard());
+            TextView sticky = (TextView) field(keyboard, "f");
+            if (sticky != null) {
+                if (remote) sticky.setText(label(true));
+                else if (section == 1) sticky.setText(label(false));
+                else if (selected != null) sticky.setText(((TextView) field(selected, "s")).getText());
+            }
+            boolean editing = false;
+            for (String name : new String[]{"B", "C", "D"}) {
+                Object header = field(adapter, name);
+                if (header != null) {
+                    View edit = (View) field(header, "t");
+                    if (edit != null) { editing |= edit.getVisibility() == View.VISIBLE; edit.setVisibility(View.GONE); }
+                }
+            }
+            if (!remote && editing && selected != null) ((View) field(selected, "t")).setVisibility(View.VISIBLE);
             Object recent = field(adapter, "B");
             if (recent != null) ((TextView) field(recent, "s")).setText(label(false));
         } catch (ReflectiveOperationException | RuntimeException exception) { log(exception); }
     }
 
     private static Object nativeItem(ClassLoader loader, ClipStore.Entry entry) throws ReflectiveOperationException {
-        Class<?> builderClass = Class.forName("fig", true, loader);
+        Class<?> builderClass = Class.forName(NativeApi.builderClass(), true, loader);
         Object builder = builderClass.getConstructor().newInstance();
         builderClass.getField("a").setLong(builder, entry.id);
         Class<?> instant = Class.forName("j$.time.Instant", true, loader);
         builderClass.getField("b").set(builder, instant.getMethod("ofEpochMilli", long.class).invoke(null, entry.time));
         if (entry.type.equals("image")) call(builder, "g", new Class<?>[]{Uri.class}, Uri.parse(entry.text));
         else call(builder, "f", new Class<?>[]{String.class}, entry.text);
-        Object item = Class.forName("fih", true, loader).getConstructor(builderClass).newInstance(builder);
+        Object item = Class.forName(NativeApi.itemClass(), true, loader).getConstructor(builderClass).newInstance(builder);
         call(item, "k", new Class<?>[]{boolean.class}, entry.pinned);
         return item;
     }
@@ -194,7 +248,7 @@ public final class ClipboardHooks {
         try {
             Object item = field(popup, "a");
             if (item == null) return;
-            View delete = root.findViewById(0x7f0b0436);
+            View delete = deleteRow(root);
             if (delete == null || !(delete.getParent() instanceof LinearLayout)) return;
             LinearLayout menu = (LinearLayout) delete.getParent();
             if (menu.getTag(SEND_TAG) != null) return;
@@ -224,7 +278,41 @@ public final class ClipboardHooks {
                 } catch (ReflectiveOperationException exception) { log(exception); }
             });
             menu.addView(row, menu.indexOfChild(delete));
-        } catch (ReflectiveOperationException | RuntimeException exception) { log(exception); }
+        } catch (ReflectiveOperationException | RuntimeException | java.io.IOException exception) { log(exception); }
+    }
+
+    private static View deleteRow(View root) throws java.io.IOException {
+        java.util.Set<String> labels = new java.util.HashSet<>();
+        TextView nativeLabel = root instanceof ViewGroup ? findText((ViewGroup) root) : null;
+        String resourcePackage = nativeLabel != null && nativeLabel.getId() > 0
+                ? root.getResources().getResourcePackageName(nativeLabel.getId()) : root.getContext().getPackageName();
+        try (java.io.BufferedReader input = new java.io.BufferedReader(new java.io.InputStreamReader(
+                root.getContext().getAssets().open("urro_gboard_delete_labels.txt"), java.nio.charset.StandardCharsets.UTF_8))) {
+            String name;
+            while ((name = input.readLine()) != null) {
+                int id = root.getResources().getIdentifier(name, "string", resourcePackage);
+                if (id != 0) labels.add(root.getResources().getString(id));
+            }
+        }
+        View text = findLabel(root, labels);
+        while (text != null && text != root && text.getParent() instanceof View) {
+            View parent = (View) text.getParent();
+            if (parent instanceof LinearLayout && ((LinearLayout) parent).getOrientation() == LinearLayout.VERTICAL) return text;
+            text = parent;
+        }
+        return null;
+    }
+
+    private static View findLabel(View view, java.util.Set<String> labels) {
+        if (view instanceof TextView && labels.contains(((TextView) view).getText().toString())) return view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = findLabel(group.getChildAt(i), labels);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private static TextView findText(ViewGroup parent) {
@@ -300,7 +388,7 @@ public final class ClipboardHooks {
     private static void refresh() {
         for (Object adapter : new ArrayList<>(adapters.keySet())) {
             adapters.put(adapter, store.entries(ttl, maximum));
-            try { call(adapter, "gz", new Class<?>[0]); }
+            try { call(adapter, NativeApi.refresh(), new Class<?>[0]); }
             catch (ReflectiveOperationException exception) { log(exception); }
         }
     }

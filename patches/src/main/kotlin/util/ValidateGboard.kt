@@ -25,8 +25,15 @@ fun main(args: Array<String>) = runBlocking {
     if (args.size == 4) {
         val community = loadPatchesFromJar(setOf(File(args[3])))
         val names = setOf("Clipboard Enhancements", "Clipboard Custom Character Limit", "Settings Homepage Override", "Package Rename")
-        selected += community.filter { it.name in names }
+        val clone = System.getenv("GBOARD_TEST_CLONE_BUNDLE")
+        selected += community.filter { it.name in names && (clone == null || it.name != "Package Rename") }
         check(selected.any { it.name == "Clipboard Enhancements" }) { "No community Clipboard Enhancements patch found" }
+    }
+    // An isolated runtime test must not replace the user's active keyboard.
+    System.getenv("GBOARD_TEST_CLONE_BUNDLE")?.let { bundle ->
+        val clone = loadPatchesFromJar(setOf(File(bundle))).single { it.name == "Clone app" }
+        clone.options["packageName"] = "com.google.android.inputmethod.latin.urrotest"
+        selected += clone
     }
     Patcher(PatcherConfig(File(args[1]), root)).use { patcher ->
         patcher += selected

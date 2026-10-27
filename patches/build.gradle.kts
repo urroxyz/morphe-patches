@@ -81,3 +81,11 @@ tasks.register<JavaExec>("validateGboard") {
     )
     providers.gradleProperty("communityBundle").orNull?.let { args(it) }
 }
+
+// Deliberately changed R8 names exercise the resolver independently of release numbers.
+tasks.register<JavaExec>("renameGboardFixture") {
+    dependsOn("classes")
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("util.RenameGboardFixtureKt")
+    args(providers.gradleProperty("renameInput").orElse(providers.gradleProperty("gboardApk")).getOrElse("missing.apk"), providers.gradleProperty("renamedFixture").getOrElse("missing-output.apk"))
+}

@@ -170,7 +170,7 @@ Tested support:
 <details>
 <summary>info</summary>
 
-This adds ClipCascade to Gboard's own clipboard panel. Local clips go under `This device`, and incoming clips go under `Other devices`. You can rename both sections in Gboard Settings → Clipboard → ClipCascade.
+This adds ClipCascade to Gboard's own clipboard panel. Local clips go under `This device`, and incoming clips go under `Other devices`. `Other devices` comes immediately after `This device`; every other section keeps its normal relative order. You can rename both sections in Gboard Settings → Clipboard → ClipCascade.
 
 Stock ClipCascade clients don't reliably say which device sent something, so remote clips are pooled together. This doesn't require changes to your other clients. Both server-relayed (P2S) and peer-to-peer (P2P) transports are included.
 
@@ -186,6 +186,7 @@ You can hide the remote section without disconnecting, or turn the connection of
 
 Tested support:
 - ARM64 18.0.3.954559732-release-arm64-v8a
+- ARM64 18.5.4.993608717-release-arm64-v8a
 - Source patching alongside community Clipboard Enhancements, Clipboard Custom Character Limit, Settings Homepage Override and Package Rename
 - Pixel clipboard panel and settings controls
 - Encrypted P2P text and PNG receipt on the Pixel through a remote ClipCascade server
@@ -212,9 +213,12 @@ This is optional. Leave the toggle off to keep Gboard's usual language controls 
 
 Tested support:
 - ARM64 18.0.3.954559732-release-arm64-v8a
+- ARM64 18.5.4.993608717-release-arm64-v8a
 - Pixel field switching, selected-code Backspace, language confirmation and repeated reopening
 
 </details>
+
+The hooks resolve Gboard's obfuscated classes and key methods from its own diagnostic markers and API shapes, rather than assuming one release's short class names or resource IDs. I've tested the versions listed above. A native UI redesign can still need a patch update; ambiguous matches stop patching with an error instead of guessing.
 
 ### UNIVERSAL
 
